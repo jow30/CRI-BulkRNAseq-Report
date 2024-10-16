@@ -94,7 +94,7 @@ module load miniconda3/24.4.0
 
 conda activate /gpfs/data/bioinformatics/software/conda_envs/cri-bulk-rnaseq-report-v1.0
 
-multiqc results -c /gpfs/data/bioinformatics/Pipelines/Production/Internal/CRI-BulkRNAseq-Pipeline/app/multiqc_config.yml
+multiqc results -c /gpfs/data/bioinformatics/Pipelines/Production/Internal/CRI-BulkRNAseq-Pipeline/app/multiqc_config.yml -f --no-data-dir
 
 R -e "shiny::runApp('/gpfs/data/bioinformatics/Pipelines/Production/Internal/CRI-BulkRNAseq-Pipeline/app', host = '0.0.0.0', port = 3838)"
 ```
@@ -129,7 +129,8 @@ Replace `<running_node>` with node that your `start.slurm` is running on, i.e., 
 
 Then open [http://localhost:8080/](http://localhost:8080/) in your local browser. Fill out the parameter form and submit to run the program following the instructions. The report will be generated in minutes depending on how large your dataset is. 
 
-<span style="color:blue">***MultiQC usually takes at least 10 minutes to be done. Please wait until the multiQC report appears in your working directory and refresh [http://localhost:8080/](http://localhost:8080/). You should be able to see a webpage like below:***</span>
+<span style="color:blue">***MultiQC usually takes several minutes to be done. Please wait until the multiQC report appears in your working directory and refresh [http://localhost:8080/](http://localhost:8080/). You should be able to see a webpage like below:***</span>
 
 ![app](figures/app.png)
 
+After submit the form, you can check the progress by looking at the `bulkRNAseq*.out` file

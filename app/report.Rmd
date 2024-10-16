@@ -17,7 +17,7 @@ output:
 params:
   intro: "This is the introduction text."
   nf_notes: "These are the pipeline notes. <br> - Point one <br> - Point two"
-  multiqc_short: FALSE
+  multiqc_path: ""
   multiqc_notes: "These are the MultiQC report notes."
   # the absolute path to output folders of DE analysis
   report_out_dir: "/Volumes/Projects/bulkRNAseq_demo/"
@@ -111,12 +111,7 @@ cat(params$multiqc_notes)
 
 ```{r step 2.1 - multiqc report, include=FALSE }
 if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))
-if(params$multiqc_short) {
-  system(paste("find", params$nextflow_out_dir, "-name \"._*\" -type f -delete"))
-  system(paste("multiqc", params$nextflow_out_dir, "-c /app/multiqc_config.yml -o", file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"), "-f"))
-}else{
-  suppressMessages(file.copy(file.path(params$nextflow_out_dir, "multiqc", "star_salmon", "multiqc_report.html"), file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/multiqc_report.html"), overwrite = T))
-}
+suppressMessages(file.copy(params$multiqc_path, file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/multiqc_report.html"), overwrite = T))
 ```
 
 ```{r step 2.2 - remove samples, results='asis' }
