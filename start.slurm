@@ -14,6 +14,8 @@ module load miniconda3/24.4.0
 
 conda activate /gpfs/data/bioinformatics/software/conda_envs/cri-bulk-rnaseq-report-v1.0
 
+cd /gpfs/data/bioinformatics/Pipelines/Production/Internal/CRI-BulkRNAseq-Pipeline/demo
+
 R -e "shiny::runApp('/gpfs/data/bioinformatics/Pipelines/Production/Internal/CRI-BulkRNAseq-Pipeline/app', host = '0.0.0.0', port = 3838)"
 
 
