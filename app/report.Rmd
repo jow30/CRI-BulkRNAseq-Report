@@ -1,0 +1,269 @@
+---
+title: "CRI-BIO-XXXX"
+author: "XXX"
+date: "_`r Sys.Date()`_"
+output:
+  html_document:
+    code_folding: show
+    df_print: paged
+    theme: yeti
+    highlight: tango
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+    number_sections: yes
+    self_contained: true
+params:
+  intro: "This is the introduction text."
+  nf_notes: "These are the pipeline notes. <br> - Point one <br> - Point two"
+  multiqc_short: FALSE
+  multiqc_notes: "These are the MultiQC report notes."
+  # the absolute path to output folders of DE analysis
+  report_out_dir: "/Volumes/Projects/bulkRNAseq_demo/"
+  # the absolute path to the nf-core/rnaseq output folder;
+  nextflow_out_dir: "/Volumes/Projects/bulkRNAseq_demo/results"
+  # the absolute path to the gtf file used in the nf-core/rnaseq run
+  gtf_file: "/Volumes/Projects/bulkRNAseq_demo/gencode.v38.primary_assembly.annotation.gtf"
+  # whether to retain protein-coding genes only
+  protein_coding: TRUE
+  # a table containing sample information:
+  # - the first column should be the same sample names used in nf-core/rnaseq; 
+  # - a column named "group" must be included to define the sample groups for comparison;
+  # - a column named "batch" must be included to define the batch information if batch correction is needed
+  metadata_file: "/Volumes/Projects/bulkRNAseq_demo/metadata.txt"
+  # a vector of sample names to be removed from the analysis; keep it empty if no sample to remove
+  sample_remove: # ["D102", "D104"]
+  # the primary sample attribute to show by color on PCA plot; must be a column name in metadata.txt;
+  color_by: "treatment"
+  # the secondary sample attribute to show by shape on PCA plot; must be a column name in metadata.txt; keep it empty if there is no secondary attribute to examine
+  shape_by: "timelag"
+  # whether to use top N most variable genes for PCA; keep it empty to use all genes
+  top_var: # 500
+  # DE test method to use; currently available options: DESeq2 and limma-voom
+  de_method: "limma-voom"
+  # whether to correct for batch effect; if TRUE, a column named "batch" must be included in metadata_file
+  batch_correction: FALSE
+  # FDR cutoff for DE test results
+  fdr_thres: 0.05
+  # Fold change cutoff for DE test results
+  fc_thres: 1.5
+  # define pairs of groups to compare in this RNAseq experiment; format each pair as c(group_to_test, group_as_base)
+  comp_pair: !expr list(
+    c("exp_24h", "neg_24h"),
+    c("exp_48h", "neg_48h")
+    )
+  # FDR cutoff for ORA results
+  ora_fdr_thres: 0.01
+  # species
+  species: "human"
+  # set TRUE to perform over-representation analysis using all DEGs or FALSE for up/down-regulated DEGs repectively
+  ora_all: FALSE 
+  # whether to perform over-representation analysis with GO terms
+  ora_go: TRUE
+  # whether to perform over-representation analysis with KEGG pathways
+  ora_kegg: TRUE
+  # whether to perform over-representation analysis with Reactome pathways
+  ora_reactome: TRUE
+  # whether to perform over-representation analysis with MSigDB gene sets
+  ora_msigdb: TRUE
+  # MSigDB category for ORA; should be listed in: print(msigdbr::msigdbr_collections(), n=24)
+  ora_msigdbr_category: "C2"
+  ora_msigdbr_subcategory: "CP:KEGG"
+  # whether to perform GSEA analysis with MSigDB gene sets
+  gsea_msigdb: TRUE
+  # FDR cutoff for GSEA results
+  gsea_fdr_thres: 0.05
+  # MSigDB category for GSEA; should be listed in: print(msigdbr::msigdbr_collections(), n=24)
+  gsea_msigdbr_category: "C2"
+  gsea_msigdbr_subcategory: "CP:KEGG"
+---
+
+```{r setup, include=FALSE, results='asis' }
+source("functions.R")
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+# Introduction/Experimental design
+
+```{r results='asis'}
+cat(params$intro)
+```
+
+```{r step 1 - load metadata }
+sampleinfo <- get_sampleinfo(params$metadata_file)
+DT::datatable(sampleinfo, rownames = FALSE, options = list(pageLength = 10))
+```
+
+------------------------------------------------------------------------
+
+# Pre-processing of raw reads
+
+```{r results='asis'}
+cat(params$nf_notes)
+```
+
+## Notable facts from the [multiQC report](./2.Pre-processing_of_raw_reads/multiqc_report.html)
+
+```{r results='asis'}
+cat(params$multiqc_notes)
+```
+
+```{r step 2.1 - multiqc report, include=FALSE }
+if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))
+if(params$multiqc_short) {
+  system(paste("find", params$nextflow_out_dir, "-name \"._*\" -type f -delete"))
+  system(paste("multiqc", params$nextflow_out_dir, "-c /app/multiqc_config.yml -o", file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"), "-f"))
+}else{
+  suppressMessages(file.copy(file.path(params$nextflow_out_dir, "multiqc", "star_salmon", "multiqc_report.html"), file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/multiqc_report.html"), overwrite = T))
+}
+```
+
+```{r step 2.2 - remove samples, results='asis' }
+# Remove samples if provided
+sampleinfo <- remove_samples(params$sample_remove, sampleinfo)
+```
+
+## Gene counts processing
+
+Salmon outputs the best estimate for the number of reads deriving from each gene, which is more statistically accurate than simple counts. Note that the estimates are not necessarily integers.
+
+Our analysis focuses on gene-level expression, where transcript-level estimates have been aggregated into their respective genes. If you are interested in transcript-level analysis, please contact our team for a customized solution.
+
+```{r step 2.3 - gene counts, results='asis' }
+source("preprocessing.R", local = T)
+```
+
+## Principal component analysis (PCA)
+
+The PCA plot represents the correlations among samples. It projects the high-dimensional data space into two principle components (PC1 and PC2) that explain the most variance in the data.
+
+The scree plot represents the percentages of variation that each PC accounts for.
+
+```{r step 2.4 - PCA plot, results='asis' }
+p <- plot_pca(pca_attr, pca_df, params$color_by, params$shape_by, params$top_var)
+plotly::ggplotly(p[[1]], tooltip = "label") 
+plotly::ggplotly(p[[2]], tooltip = "label") 
+```
+
+------------------------------------------------------------------------
+
+# Differential expression analysis
+
+```{r step 3.1 - Fitting models, results='asis' }
+source("dge.R", local = T)
+```
+
+## Number of DEGs
+
+Significant differentially expressed genes (DEGs) were defined with an absolute fold change (LFC) larger than `r params$fc_thres` and a false-discovery rate (FDR) lower than `r params$fdr_thres`.
+
+```{r step 3.2 - Table summary of DE genes }
+DT::datatable(summary_df, options = list(pageLength = 10))
+```
+
+## Volcano plots
+
+Hover over the points to see the gene names.
+
+```{r step 3.3 - Volcano plots}
+htmltools::tagList(setNames(vp_list, NULL))
+```
+
+## Table of DEGs
+
+Normalized log2 CPM of DEGs with log2FC and FDR adjusted P value are saved in csv files for each contrast in the `3.Differential_expression_analysis` folder.
+
+```{r step 5.4 - DEG table }
+htmltools::tagList(setNames(tb_list, NULL))
+```
+
+## Heatmaps
+
+Pearson correlation was used to cluster differentially expressed genes by their counts, which were then represented as a heatmap with the data scaled by Z-score for each row.
+
+Please note that the gene names may be partially hidden in the heatmap due to the size of the plot. 
+
+```{r step 5.5 - Heatmaps, results='asis' }
+# JavaScript for displaying the selected image
+cat('
+<script>
+function showImage(dropdown, comparisonClass) {
+  var selector = dropdown.value;
+  if (selector === "") {
+    return;  // Do nothing if the blank option is selected
+  }
+  var comparisons = document.getElementsByClassName(comparisonClass);
+  for (var i = 0; i < comparisons.length; i++) {
+    comparisons[i].style.display = "none";
+  }
+  document.getElementById(selector).style.display = "block";
+}
+</script>
+')
+# Create the dropdown menu
+cat('<select class="comparison-selector" onchange="showImage(this, \'heatmap-comparison\')">')
+cat('<option value="" selected disabled>Select a comparison</option>')  # Blank default option
+for (comp in hm_files) {
+  cat(paste0('<option value="heatmap-', comp, '">', comp, '</option>'))
+}
+cat('</select>')
+# Create divs for each image, initially hidden
+for (comp in hm_files) {
+  cat(paste0('<div id="heatmap-', comp, '" class="heatmap-comparison" style="display:none;">'))
+  cat(paste0('![](', params$report_out_dir, '/3.Differential_expression_analysis/heatmap_', comp, '.png)'))
+  cat('</div>')
+}
+```
+
+------------------------------------------------------------------------
+
+# Functional analysis
+
+## Over-representation analysis
+
+Gene set over-representation analysis tests whether a set of DEGs is enriched in a functional gene list of interest. Results are also saved in tabular form in the `4.Functional_analysis` folder.
+
+Please note that not all gene symbols can be mapped to gene IDs in the functional databases. So the number of analyzed genes may be less than the number of input DEGs.
+
+In the dot plots below, size of the dots represents the proportion of DEGs associated with a particular pathway (number of associated DEGs / total number of DEGs), and color represents the FDR adjusted p-value.
+
+```{r step 4 - functional enrichments, fig.height=12, fig.width=12, results='asis' }
+source("enrichment.R", local = T)
+
+if(params$gsea_msigdb){
+  # Create the dropdown menu
+  cat('<select class="comparison-selector" onchange="showImage(this, \'gsea-comparison\')">')
+  cat('<option value="" selected disabled>Select a comparison</option>')  # Blank default option
+  for (comp in my_contrasts) {
+    cat(paste0('<option value="gsea-', comp, '">', comp, '</option>'))
+  }
+  cat('</select>')
+  
+  # Create divs for each image, initially hidden
+  for (comp in my_contrasts) {
+    cat(paste0('<div id="gsea-', comp, '" class="gsea-comparison" style="display:none;">'))
+    cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
+    cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_bubble_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
+    cat('</div>')
+  }
+}
+
+```
+
+```{r save R objects }
+save(list = ls(), file = file.path(params$report_out_dir, "report.RData"))
+```
+
+------------------------------------------------------------------------
+
+# Session info
+
+The output from running 'sessionInfo' is shown below and details all packages and version necessary to reproduce the results in this report.
+
+```{r session info}
+sessionInfo()
+```
+
+
+
