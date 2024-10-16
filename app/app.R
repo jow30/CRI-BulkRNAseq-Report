@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(shinycssloaders)
 library(rmarkdown)
 library(tidyverse)
 
@@ -7,25 +8,7 @@ library(tidyverse)
 ui <- fluidPage(
   useShinyjs(),
   
-  # Spinner CSS
-  tags$head(
-    tags$style(
-      HTML("
-        #spinner {
-          display: none;
-          margin-top: 20px;
-          text-align: center;
-        }
-        .spinner-border {
-          width: 3rem;
-          height: 3rem;
-        }
-      ")
-    )
-  ),
-  
   titlePanel("RNAseq Differential Expression Analysis"),
-  
   p("Fill out this form to run DE analysis downstream of nf-core/rnaseq pipeline."),
   hr(),
   
@@ -84,13 +67,7 @@ ui <- fluidPage(
                        choices = unique(msigdbr::msigdbr_collections()$gs_cat), selected = "C2", width = "100%"),
            selectInput("gsea_msigdbr_subcategory", "MSigDB Subcategory for GSEA:", 
                        choices = unique(msigdbr::msigdbr_collections()$gs_subcat), selected = "CP:KEGG", width = "100%"),
-           actionButton("submit_btn", "Submit", class = "btn btn-success btn-lg"),
-           
-           # Spinner to show loading during processing
-           div(id = "spinner", 
-               div(class = "spinner-border text-primary", role = "status"),
-               p("Generating report, please wait...")
-           )
+           withSpinner(actionButton("submit_btn", "Submit", class = "btn btn-success btn-lg"), type = 8)  # Adding spinner
     )
   )
 )
@@ -224,12 +201,25 @@ server <- function(input, output, session) {
     })
   })
   
+  # Function to handle errors and show them in a modal
+  handle_error <- function(error_message) {
+    showModal(modalDialog(
+      title = "Error Occurred",
+      tagList(
+        p("The analysis failed due to an error."),
+        p("Error message:"),
+        pre(error_message),
+        p("Please check the error logs in the 'bulkRNAseq*.err' file for more details."),
+        p("You can refresh the page and try again.")
+      ),
+      easyClose = TRUE,
+      footer = modalButton("OK")
+    ))
+  }
+
   observeEvent(input$submit_btn, {
-    # Show the spinner
-    shinyjs::show("spinner")
-    
-    # Disable the submit button to prevent multiple submissions
-    disable("submit_btn")
+    shinyjs::show("spinner")  # Show spinner during processing
+    disable("submit_btn")  # Disable the submit button to prevent multiple clicks
     
     count <- counter()
     comp_pair <- list()
@@ -288,20 +278,30 @@ server <- function(input, output, session) {
       gsea_msigdbr_subcategory = gsea_msigdbr_subcategory_val
     )
     
-    output_file = file.path(input$report_out_dir, "report.html")
-    rmarkdown::render("report.Rmd", output_file = output_file, params = params, envir = new.env())
-    
-    # Hide spinner and enable submit button when done
-    hide("spinner")
-    enable("submit_btn")
-    
-    # Inform user of the output file location
-    showModal(modalDialog(
-      title = "Analysis Complete",
-      tagList(paste("Your report has been generated at:", output_file)),
-      easyClose = TRUE,
-      footer = NULL
-    ))
+    # Wrap the rmarkdown::render process in a tryCatch block to handle errors
+    tryCatch({
+      output_file <- file.path(input$report_out_dir, "report.html")
+      
+      # Render the report, and if successful, show a success modal
+      rmarkdown::render("report.Rmd", output_file = output_file, params = params, envir = new.env())
+      
+      shinyjs::hide("spinner")  # Hide spinner when done
+      showModal(modalDialog(
+        title = "Analysis Complete",
+        tagList(paste("Your report has been generated at:", output_file)),
+        easyClose = TRUE,
+        footer = modalButton("OK")
+      ))
+      
+      enable("submit_btn")  # Re-enable the submit button after success
+    }, error = function(e) {
+      # Handle the error, capture the message, and show a user-friendly modal
+      error_message <- conditionMessage(e)
+      handle_error(error_message)
+      
+      shinyjs::hide("spinner")  # Hide spinner when an error occurs
+      enable("submit_btn")  # Re-enable the submit button after an error
+    })
   })
 }
 
