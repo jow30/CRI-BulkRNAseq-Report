@@ -28,7 +28,7 @@ ui <- fluidPage(
            helpText("The default drop-down menu include all existing folders in your working directory. If your would like to create a new directory to save the results, please enter the full path to the new directory into the blank below."),
            selectizeInput("report_out_dir", "Output Directory for DE Analysis:", choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), options = list(create = TRUE), width = "100%"),
            selectInput("nextflow_out_dir", "Nextflow Output Directory:",
-                       choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), width = "100%"),
+                       choices = grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE), width = "100%"),
            helpText("The default drop-down menu include all GTF files in /gpfs/data/referenceFiles/. If your GTF file is stored somewhere else on Randi, please enter the full path to the GTF file into the blank below."),
            selectizeInput("gtf_file", "GTF File Used in the nf-core/rnaseq Run:", choices = list.files(path = "/gpfs/data/referenceFiles", pattern = "\\.gtf$", full.names = TRUE, recursive = TRUE), options = list(create = TRUE), width = "100%"),
            helpText("The protein-coding gene filtering is based on the gene_type attribute at the 9th column of the GTF file. So, if you did not use Gencode references, the GTF format could be incompatible with this program and the protein-coding gene filtering won't work properly."),

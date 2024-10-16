@@ -15,33 +15,33 @@ output:
     number_sections: yes
     self_contained: true
 params:
-  intro: "This is the introduction text."
-  nf_notes: "These are the pipeline notes. <br> - Point one <br> - Point two"
-  multiqc_path: ""
-  multiqc_notes: "These are the MultiQC report notes."
+  intro: 
+  nf_notes: 
+  multiqc_path: 
+  multiqc_notes: 
   # the absolute path to output folders of DE analysis
-  report_out_dir: "/Volumes/Projects/bulkRNAseq_demo/"
+  report_out_dir: 
   # the absolute path to the nf-core/rnaseq output folder;
-  nextflow_out_dir: "/Volumes/Projects/bulkRNAseq_demo/results"
+  nextflow_out_dir: 
   # the absolute path to the gtf file used in the nf-core/rnaseq run
-  gtf_file: "/Volumes/Projects/bulkRNAseq_demo/gencode.v38.primary_assembly.annotation.gtf"
+  gtf_file: 
   # whether to retain protein-coding genes only
   protein_coding: TRUE
   # a table containing sample information:
   # - the first column should be the same sample names used in nf-core/rnaseq; 
   # - a column named "group" must be included to define the sample groups for comparison;
   # - a column named "batch" must be included to define the batch information if batch correction is needed
-  metadata_file: "/Volumes/Projects/bulkRNAseq_demo/metadata.txt"
+  metadata_file: 
   # a vector of sample names to be removed from the analysis; keep it empty if no sample to remove
   sample_remove: # ["D102", "D104"]
   # the primary sample attribute to show by color on PCA plot; must be a column name in metadata.txt;
-  color_by: "treatment"
+  color_by:
   # the secondary sample attribute to show by shape on PCA plot; must be a column name in metadata.txt; keep it empty if there is no secondary attribute to examine
-  shape_by: "timelag"
+  shape_by:
   # whether to use top N most variable genes for PCA; keep it empty to use all genes
   top_var: # 500
   # DE test method to use; currently available options: DESeq2 and limma-voom
-  de_method: "limma-voom"
+  de_method: "DESeq2"
   # whether to correct for batch effect; if TRUE, a column named "batch" must be included in metadata_file
   batch_correction: FALSE
   # FDR cutoff for DE test results
@@ -49,12 +49,9 @@ params:
   # Fold change cutoff for DE test results
   fc_thres: 1.5
   # define pairs of groups to compare in this RNAseq experiment; format each pair as c(group_to_test, group_as_base)
-  comp_pair: !expr list(
-    c("exp_24h", "neg_24h"),
-    c("exp_48h", "neg_48h")
-    )
+  comp_pair: !expr list()
   # FDR cutoff for ORA results
-  ora_fdr_thres: 0.01
+  ora_fdr_thres: 0.05
   # species
   species: "human"
   # set TRUE to perform over-representation analysis using all DEGs or FALSE for up/down-regulated DEGs repectively
@@ -68,8 +65,8 @@ params:
   # whether to perform over-representation analysis with MSigDB gene sets
   ora_msigdb: TRUE
   # MSigDB category for ORA; should be listed in: print(msigdbr::msigdbr_collections(), n=24)
-  ora_msigdbr_category: "C2"
-  ora_msigdbr_subcategory: "CP:KEGG"
+  ora_msigdbr_category: "H"
+  ora_msigdbr_subcategory:
   # whether to perform GSEA analysis with MSigDB gene sets
   gsea_msigdb: TRUE
   # FDR cutoff for GSEA results
@@ -84,9 +81,13 @@ source("functions.R")
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
+```{r create out dir, include=FALSE}
+if(!dir.exists(params$report_out_dir)) dir.create(params$report_out_dir)
+```
+
 # Introduction/Experimental design
 
-```{r results='asis'}
+```{r introduction, results='asis'}
 cat(params$intro)
 ```
 
@@ -99,18 +100,18 @@ DT::datatable(sampleinfo, rownames = FALSE, options = list(pageLength = 10))
 
 # Pre-processing of raw reads
 
-```{r results='asis'}
+```{r nf-core pipeline notes, results='asis'}
 cat(params$nf_notes)
 ```
 
 ## Notable facts from the [multiQC report](./2.Pre-processing_of_raw_reads/multiqc_report.html)
 
-```{r results='asis'}
+```{r multiqc notes, results='asis'}
 cat(params$multiqc_notes)
 ```
 
 ```{r step 2.1 - multiqc report, include=FALSE }
-if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"),recursive = TRUE)
+if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))
 suppressMessages(file.copy(params$multiqc_path, file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/multiqc_report.html"), overwrite = T))
 ```
 
