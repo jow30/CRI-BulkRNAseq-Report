@@ -110,7 +110,7 @@ cat(params$multiqc_notes)
 ```
 
 ```{r step 2.1 - multiqc report, include=FALSE }
-if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))
+if(!dir.exists(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"))) dir.create(file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads"),recursive = TRUE)
 suppressMessages(file.copy(params$multiqc_path, file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/multiqc_report.html"), overwrite = T))
 ```
 
