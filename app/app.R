@@ -36,10 +36,12 @@ ui <- fluidPage(
            checkboxInput("protein_coding", "Retain Protein-Coding Genes Only", TRUE),
            selectInput("metadata_file", "Metadata File:",
                        choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt", full.names = TRUE, recursive = TRUE), width = "100%"),
+           uiOutput("metadata_error"),
            selectizeInput("sample_remove", "Samples to Remove:", choices = NULL, multiple = TRUE, options = list(create = FALSE), width = "100%"),
            selectizeInput("color_by", "Sample Attribute for PCA Color:", choices = NULL, width = "100%"),
            selectizeInput("shape_by", "Sample Attribute for PCA Shape:", choices = NULL, selected = NULL, options = list(placeholder = "Leave empty if no secondary attribute to examine."), width = "100%"),
            textInput("top_var", "Top N Most Variable Genes for PCA:", value = NULL, placeholder = "Leave empty to use all genes", width = "100%"),
+           uiOutput("top_var_error"),
            selectInput("de_method", "DE Test Method:", choices = c("DESeq2", "limma-voom"), selected = "DESeq2", width = "100%"),
            helpText("A column named \"batch\" in the metadata table is required for batch effect correction."),
            checkboxInput("batch_correction", "Correct for Batch Effect", FALSE),
@@ -67,7 +69,7 @@ ui <- fluidPage(
                        choices = unique(msigdbr::msigdbr_collections()$gs_cat), selected = "C2", width = "100%"),
            selectInput("gsea_msigdbr_subcategory", "MSigDB Subcategory for GSEA:", 
                        choices = unique(msigdbr::msigdbr_collections()$gs_subcat), selected = "CP:KEGG", width = "100%"),
-           withSpinner(actionButton("submit_btn", "Submit", class = "btn btn-success btn-lg"), type = 8)  # Adding spinner
+           actionButton("submit_btn", "Submit", class = "btn btn-success btn-lg")
     )
   )
 )
@@ -76,6 +78,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   # Initialize submit button as disabled
   disable("submit_btn")
+  shinyjs::hide("spinner")
   
   # Observe the selected MSigDB category and update the subcategory options
   observeEvent(input$ora_msigdbr_category, {
@@ -106,24 +109,37 @@ server <- function(input, output, session) {
   
   # Reactive variable for group names
   group_names <- reactiveVal(NULL)
-  
-  # Reactive expression to check if metadata is valid (i.e., contains the 'group' column)
+
+  # Reactive to validate metadata
   validate_metadata <- reactive({
-    req(input$metadata_file)  # Ensure a file is uploaded
+    # Ensure a file is uploaded
+    if (is.null(input$metadata_file) || input$metadata_file == "") {
+      output$metadata_error <- renderUI({
+        div(style = "color: red;", "Please select a metadata file.")
+      })
+      return(FALSE)  # No file, return invalid
+    }
     
-    # Read the metadata file
-    metadata <- read.delim(input$metadata_file)
+    # Try reading the metadata file, handle errors
+    metadata <- tryCatch({
+      read.delim(input$metadata_file)
+    }, error = function(e) {
+      output$metadata_error <- renderUI({
+        div(style = "color: red;", "Error reading the file. Please check if the file format is correct. Only TXT format is acceptable.")
+      })
+      return(FALSE)  # Error reading file, return invalid
+    })
     
     # Check if 'group' column exists
     if (!"group" %in% colnames(metadata)) {
-      showModal(modalDialog(
-        title = "Warning",
-        "The metadata file does not contain the required 'group' column. Please check your file.",
-        easyClose = TRUE,
-        footer = modalButton("OK")
-      ))
-      return(FALSE)  # Metadata is invalid
+      output$metadata_error <- renderUI({
+        div(style = "color: red;", "The metadata file does not contain the required 'group' column.")
+      })
+      return(FALSE)  # Missing group column, return invalid
     }
+    
+    # If everything is valid, remove any error message
+    output$metadata_error <- renderUI({ NULL })
     
     # Assuming the first column contains the sample names and the `group` column contains group information
     sample_names <- metadata[[1]]
@@ -144,12 +160,16 @@ server <- function(input, output, session) {
     top_var_val <- as.numeric(input$top_var)
     return(!is.na(top_var_val) && top_var_val %% 1 == 0 && top_var_val > 0)
   })
-  
-  # Show a warning message if the input is invalid
-  observe({
-    if (!validate_top_var()) showNotification("Please enter an integer greater than 0 for the 'top N most variable genes' argument or leave it empty.", type = "error", duration = 6)
+
+  # Dynamically render an error message if 'top_var' is invalid
+  output$top_var_error <- renderUI({
+    if (!validate_top_var()) {
+      div(style = "color: red;", "Please enter an integer greater than 0 or leave it empty.")
+    } else {
+      NULL  # No error message if input is valid
+    }
   })
-  
+
   # You can conditionally enable/disable a submit button based on validation
   observe({
     if (validate_top_var() && validate_metadata()) {
@@ -201,24 +221,17 @@ server <- function(input, output, session) {
     })
   })
   
-  # Function to handle errors and show them in a modal
-  handle_error <- function(error_message) {
-    showModal(modalDialog(
-      title = "Error Occurred",
-      tagList(
-        p("The analysis failed due to an error."),
-        p("Error message:"),
-        pre(error_message),
-        p("Please check the error logs in the 'bulkRNAseq*.err' file for more details."),
-        p("You can refresh the page and try again.")
-      ),
-      easyClose = TRUE,
-      footer = modalButton("OK")
-    ))
+  # Initialize the log output
+  output$render_log <- renderText({ "" })  # Empty initially
+  
+  # Function to update the log output inside the modal
+  update_log <- function(line) {
+    current_log <- isolate(output$render_log())
+    new_log <- paste(current_log, line, sep = "\n")
+    output$render_log <- renderText({ new_log })
   }
 
   observeEvent(input$submit_btn, {
-    shinyjs::show("spinner")  # Show spinner during processing
     disable("submit_btn")  # Disable the submit button to prevent multiple clicks
     
     count <- counter()
@@ -278,33 +291,59 @@ server <- function(input, output, session) {
       gsea_msigdbr_subcategory = gsea_msigdbr_subcategory_val
     )
     
-    # Wrap the rmarkdown::render process in a tryCatch block to handle errors
+    # Show the modal with the spinner and log area
+    showModal(modalDialog(
+      title = "Generating Report",
+      div(
+        div(class = "spinner-border text-primary", role = "status"),  # Spinner
+        p("Generating report, please wait..."),
+        verbatimTextOutput("render_log")  # Show the render log in the modal
+      ),
+      footer = NULL,  # No footer while processing
+      easyClose = FALSE  # Prevent closing the modal until the process finishes
+    ))
+    
+    # Create a custom output handler to capture the rendering progress
+    custom_output_handler <- function(line) {
+      update_log(line)  # This function will update the log in the modal
+    }
+    
+    # Use tryCatch to handle any potential errors
     tryCatch({
-      output_file <- file.path(input$report_out_dir, "report.html")
+      # Call rmarkdown::render() and capture output via a custom output handler
+      rmarkdown::render("report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = TRUE, output_options = list(), knit_root_dir = getwd(), progress = custom_output_handler)
       
-      # Render the report, and if successful, show a success modal
-      rmarkdown::render("report.Rmd", output_file = output_file, params = params, envir = new.env())
-      
-      shinyjs::hide("spinner")  # Hide spinner when done
+      # After rendering is complete, close the modal and show success
+      removeModal()
       showModal(modalDialog(
         title = "Analysis Complete",
-        tagList(paste("Your report has been generated at:", output_file)),
+        tagList(paste("Please find the following results at", input$report_out_dir, ".<br><br>report.html<br>report.RData<br>2.Pre-processing_of_raw_reads<br>3.Differential_expression_analysis<br>4.Functional_analysis")),
         easyClose = TRUE,
         footer = modalButton("OK")
       ))
       
-      enable("submit_btn")  # Re-enable the submit button after success
+      enable("submit_btn")
     }, error = function(e) {
-      # Handle the error, capture the message, and show a user-friendly modal
-      error_message <- conditionMessage(e)
-      handle_error(error_message)
+      # Handle errors and display an error message in a new modal
+      removeModal()
+      showModal(modalDialog(
+        title = "Error",
+        tagList(
+          p("The analysis failed due to an error."),
+          p("Error message:"),
+          pre(conditionMessage(e)),
+          p("Please check the error logs (in *.err file) for more details."),
+          p("You can refresh the page and try again.")
+        ),
+        easyClose = TRUE,
+        footer = modalButton("OK")
+      ))
       
-      shinyjs::hide("spinner")  # Hide spinner when an error occurs
-      enable("submit_btn")  # Re-enable the submit button after an error
+      # Re-enable the submit button in case of an error
+      enable("submit_btn")
     })
   })
 }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
