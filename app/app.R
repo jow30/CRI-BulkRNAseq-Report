@@ -20,22 +20,21 @@ ui <- fluidPage(
                          width = "100%", height = "200px"),
            textAreaInput("nf_notes", "A Breif Description of the Executed Pipeline:", " - We used the nf-core/rnaseq v3.16.0 pipeline for pre-processing of raw reads. \n - We used the STAR->Salmon route for read alignment and quantification. \n - We used the GRCm39 reference genome for read mapping and Gencode vM27 for gene annotation.",
                          width = "100%", height = "200px"),
-           selectInput("multiqc_path", "MultiQC report to show:",
-                       choices = list.files(path = Sys.getenv("PWD"), pattern = ".html", full.names = TRUE, recursive = TRUE), width = "100%"),
+           helpText("The default drop-down menu include all HTML files in your working directory. If your multiQC report file is stored somewhere else on Randi, please enter the full path to the file into the blank below."),
+           selectizeInput("multiqc_path", "MultiQC report to show:", choices = list.files(path = Sys.getenv("PWD"), pattern = ".html", full.names = TRUE, recursive = FALSE), options = list(create = TRUE), width = "100%"),
            textAreaInput("multiqc_notes", "Notable Facts in the MultiQC Report:",
                          placeholder = "Write something here if any notable facts are found in the multiQC report.",
                          width = "100%", height = "200px"),
-           selectizeInput("report_out_dir", "Output Directory for DE Analysis:", 
-                       choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), options = list(create = TRUE), width = "100%"),
+           helpText("The default drop-down menu include all existing folders in your working directory. If your would like to create a new directory to save the results, please enter the full path to the new directory into the blank below."),
+           selectizeInput("report_out_dir", "Output Directory for DE Analysis:", choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), options = list(create = TRUE), width = "100%"),
            selectInput("nextflow_out_dir", "Nextflow Output Directory:",
-                       choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), 
-                       selected = grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)[1], width = "100%"),
-           helpText("By default, the app lists all GTF files in /gpfs/data/referenceFiles/. If your GTF file is stored somewhere else on Randi, please enter the full path to the GTF file into the blank below."),
+                       choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), width = "100%"),
+           helpText("The default drop-down menu include all GTF files in /gpfs/data/referenceFiles/. If your GTF file is stored somewhere else on Randi, please enter the full path to the GTF file into the blank below."),
            selectizeInput("gtf_file", "GTF File Used in the nf-core/rnaseq Run:", choices = list.files(path = "/gpfs/data/referenceFiles", pattern = "\\.gtf$", full.names = TRUE, recursive = TRUE), options = list(create = TRUE), width = "100%"),
            helpText("The protein-coding gene filtering is based on the gene_type attribute at the 9th column of the GTF file. So, if you did not use Gencode references, the GTF format could be incompatible with this program and the protein-coding gene filtering won't work properly."),
            checkboxInput("protein_coding", "Retain Protein-Coding Genes Only", TRUE),
-           selectInput("metadata_file", "Metadata File:",
-                       choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt", full.names = TRUE, recursive = TRUE), width = "100%"),
+           helpText("The default drop-down menu include all TXT files in your working directory. If your metadata file is stored somewhere else on Randi, please enter the full path to the file into the blank below."),
+           selectizeInput("metadata_file", "Metadata File:", choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt", full.names = TRUE, recursive = FALSE), options = list(create = TRUE), width = "100%"),
            uiOutput("metadata_error"),
            selectizeInput("sample_remove", "Samples to Remove:", choices = NULL, multiple = TRUE, options = list(create = FALSE), width = "100%"),
            selectizeInput("color_by", "Sample Attribute for PCA Color:", choices = NULL, width = "100%"),
@@ -303,15 +302,17 @@ server <- function(input, output, session) {
       easyClose = FALSE  # Prevent closing the modal until the process finishes
     ))
     
-    # Create a custom output handler to capture the rendering progress
-    custom_output_handler <- function(line) {
-      update_log(line)  # This function will update the log in the modal
-    }
-    
     # Use tryCatch to handle any potential errors
     tryCatch({
-      # Call rmarkdown::render() and capture output via a custom output handler
-      rmarkdown::render("report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = TRUE, output_options = list(), knit_root_dir = getwd(), progress = custom_output_handler)
+      # Capture the output of the rendering process
+      render_output <- capture.output({
+        rmarkdown::render(input = "report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = FALSE)
+      }, type = "message")
+      
+      # Update the log as the rendering progresses
+      for (line in render_output) {
+        update_log(line)  # Update the log in real-time
+      }
       
       # After rendering is complete, close the modal and show success
       removeModal()
@@ -332,14 +333,12 @@ server <- function(input, output, session) {
           p("The analysis failed due to an error."),
           p("Error message:"),
           pre(conditionMessage(e)),
-          p("Please check the error logs (in *.err file) for more details."),
-          p("You can refresh the page and try again.")
+          p("Please check the error logs (in *.err file) for more details.")
         ),
         easyClose = TRUE,
         footer = modalButton("OK")
       ))
       
-      # Re-enable the submit button in case of an error
       enable("submit_btn")
     })
   })
