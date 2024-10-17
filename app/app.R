@@ -79,6 +79,8 @@ server <- function(input, output, session) {
   disable("submit_btn")
   shinyjs::hide("spinner")
   
+  output$render_log <- renderText({ "" })  # Empty log at the start
+
   # Observe the selected MSigDB category and update the subcategory options
   observeEvent(input$ora_msigdbr_category, {
     req(input$ora_msigdbr_category)  # Ensure a category is selected
@@ -219,15 +221,12 @@ server <- function(input, output, session) {
       active_comparisons(current_comparisons)
     })
   })
-  
-  # Initialize the log output
-  output$render_log <- renderText({ "" })  # Empty initially
-  
+
   # Function to update the log output inside the modal
   update_log <- function(line) {
-    current_log <- isolate(output$render_log())
-    new_log <- paste(current_log, line, sep = "\n")
-    output$render_log <- renderText({ new_log })
+    current_log <- output$render_log()  # Get the current log
+    new_log <- paste(current_log, line, sep = "\n")  # Append the new line to the log
+    output$render_log <- renderText({ new_log })  # Update the log text output
   }
 
   observeEvent(input$submit_btn, {
