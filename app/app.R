@@ -51,7 +51,7 @@ ui <- fluidPage(
            uiOutput("dynamic_ui"),
            hr(),
            numericInput("ora_fdr_thres", "FDR Cutoff for ORA Results:", value = 0.05, width = "100%"),
-           selectInput("species", "Species:", choices = c("human", "mouse"), selected = "human", width = "100%"),
+           selectInput("species", "Species:", choices = c("human", "mouse", "rat"), selected = "human", width = "100%"),
            helpText("Select the \"Perform ORA with All DEGs\" option below to merge up-/down-regulated DEGs into a single list for ORA. Otherwise, they will be analyzed separately. "),
            checkboxInput("ora_all", "Perform ORA with All DEGs", TRUE),
            checkboxInput("ora_go", "Perform ORA with GO Terms", TRUE),

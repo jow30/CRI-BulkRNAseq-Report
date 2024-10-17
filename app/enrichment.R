@@ -8,8 +8,12 @@ if (params$species == "human") {
   gsorDb <- "org.Mm.eg.db"
   keggOrg <- 'mmu'
   msigdbr_species <- "Mus musculus"
+} else if (params$species == "rat") {
+  gsorDb <- "org.Rn.eg.db"
+  keggOrg <- 'rno'
+  msigdbr_species <- "Rattus norvegicus"
 } else {
-  stop("Species not supported. Please provide either human or mouse. ")
+  stop("Species not supported. ")
 }
 
 if(params$ora_go){
@@ -138,6 +142,6 @@ if(params$gsea_msigdb){
   cat("In this analysis, we analyzed KEGG pathways. Please contact our staffs to analyze more pathways. <br><br>")
   cat("Note that the GSEA plots shown below only present the top 5 pathways. And the bubble plots only present the top 10. To plot the pathway of your interest, please further contact our staffs. <br><br>")
 
-  lapply(my_contrasts, function(x) run_GSEA(x, res[[x]], params$species, params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory, params$gsea_fdr_thres, file.path(params$report_out_dir, "4.Functional_analysis")))
+  lapply(my_contrasts, function(x) run_GSEA(x, res[[x]], msigdbr_species, params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory, params$gsea_fdr_thres, file.path(params$report_out_dir, "4.Functional_analysis")))
 }
 

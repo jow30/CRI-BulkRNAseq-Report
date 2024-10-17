@@ -259,14 +259,7 @@ gs_dotplot <- function(clusterProfResult, fdr_thres, title) {
   print(p)
 }
 
-run_GSEA <- function(comp, res, species, msigdbr_category, msigdbr_subcategory, fdr_thres, outDir) {
-  if (species == 'human') {
-    msigdbr_species <- "Homo sapiens"
-  } else if (species == "mouse") {
-    msigdbr_species <- "Mus musculus"
-  } else {
-    stop("Species not supported")
-  }
+run_GSEA <- function(comp, res, msigdbr_species, msigdbr_category, msigdbr_subcategory, fdr_thres, outDir) {
   # view all available gene sets: print(msigdbr_collections(), n=24)
   # see the full explanation of gene sets at https://www.gsea-msigdb.org/gsea/msigdb/collections.jsp
   # fetch gene sets and genes
