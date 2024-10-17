@@ -143,5 +143,8 @@ if(params$gsea_msigdb){
   cat("Note that the GSEA plots shown below only present the top 5 pathways. And the bubble plots only present the top 10. To plot the pathway of your interest, please further contact our staffs. <br><br>")
 
   lapply(my_contrasts, function(x) run_GSEA(x, res[[x]], msigdbr_species, params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory, params$gsea_fdr_thres, file.path(params$report_out_dir, "4.Functional_analysis")))
+
+  gsea_plots <- list.files(file.path(params$report_out_dir, "4.Functional_analysis"), pattern = "GSEA_plot", full.names = TRUE)
+  gsea_plots <- gsub(".*/GSEA_plot_", "", gsub(".png", "", gsea_plots))
 }
 

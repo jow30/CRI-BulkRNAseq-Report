@@ -280,7 +280,7 @@ run_GSEA <- function(comp, res, msigdbr_species, msigdbr_category, msigdbr_subca
     myGSEA.df <- myGSEA.res@result %>% mutate(phenotype = case_when(NES > 0 ~ comp_grp[1], NES < 0 ~ comp_grp[2]))
     myGSEA.df <- myGSEA.df %>% arrange(desc(abs(NES)))
     
-    write_csv(myGSEA.df, paste0(outDir, '/', comp, '_GSEA_table_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '.csv'))
+    write_csv(myGSEA.df, paste0(outDir, '/GSEA_table_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '_', comp, '.csv'))
     
     gsea_plot = enrichplot::gseaplot2(
       myGSEA.res,
@@ -289,7 +289,7 @@ run_GSEA <- function(comp, res, msigdbr_species, msigdbr_category, msigdbr_subca
       rel_heights = c(1.5, 0.5, 0.5),
       title = paste0(comp, ' GSEA ', paste(c(msigdbr_category, msigdbr_subcategory), collapse = ' '), ' top5')
     )
-    ggsave(paste0(outDir, '/', comp, '_GSEA_plot_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '.png'), gsea_plot, width = 7, height = 5)
+    ggsave(paste0(outDir, '/GSEA_plot_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '_', comp, '.png'), gsea_plot, width = 7, height = 5)
     
     #create 'bubble plot' to summarize y signatures across x phenotypes
     bubble_plot <- ggplot(myGSEA.df[1:min(dim(myGSEA.df)[1],10),], aes(x=phenotype, y=ID)) + #plot the first ten pathways
@@ -297,7 +297,7 @@ run_GSEA <- function(comp, res, msigdbr_species, msigdbr_category, msigdbr_subca
       scale_color_gradient(low="blue", high="red") +
       theme_bw() +
       labs(title = paste0(comp, ' GSEA'), subtitle = paste(c(msigdbr_category, msigdbr_subcategory, "top10"), collapse = ' '), x = "", y = "", caption = "NES: Normalized Enrichment Score")
-    ggsave(paste0(outDir, '/', comp, '_GSEA_bubble_plot_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '.png'), bubble_plot, width = 7, height = 5)
+    ggsave(paste0(outDir, '/GSEA_bubble_plot_', paste(c(msigdbr_category, msigdbr_subcategory), collapse = '_'), '_', comp, '.png'), bubble_plot, width = 7, height = 5)
     
   }else{
     cat(paste0("No significant enrichemnt for ", comp, "."))
