@@ -68,4 +68,7 @@ deGenes <- lapply(resSig, rownames)
 upGenes <- lapply(resSig_up, rownames)
 downGenes <- lapply(resSig_dn, rownames)
 
-
+# Remove list elements if the row number is 0
+deGenes <- deGenes[sapply(deGenes, length) > 0]
+upGenes <- upGenes[sapply(upGenes, length) > 0]
+downGenes <- downGenes[sapply(downGenes, length) > 0]

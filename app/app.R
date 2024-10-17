@@ -52,7 +52,7 @@ ui <- fluidPage(
            hr(),
            numericInput("ora_fdr_thres", "FDR Cutoff for ORA Results:", value = 0.05, width = "100%"),
            selectInput("species", "Species:", choices = c("human", "mouse", "rat"), selected = "human", width = "100%"),
-           helpText("Select the \"Perform ORA with All DEGs\" option below to merge up-/down-regulated DEGs into a single list for ORA. Otherwise, they will be analyzed separately. "),
+           helpText("Select the option below to merge up-/down-regulated DEGs into a single list for ORA. Otherwise, they will be analyzed separately. "),
            checkboxInput("ora_all", "Perform ORA with All DEGs", TRUE),
            checkboxInput("ora_go", "Perform ORA with GO Terms", TRUE),
            checkboxInput("ora_kegg", "Perform ORA with KEGG Pathways", TRUE),
@@ -310,9 +310,9 @@ server <- function(input, output, session) {
           p(paste0("Please find the following results at ", input$report_out_dir, ":")), 
           p(" - report.html"),
           p(" - report.RData"),
-          p(" - 2.Pre-processing_of_raw_reads"),
-          p(" - 3.Differential_expression_analysis"),
-          p(" - 4.Functional_analysis")
+          p(" - 2.Pre-processing_of_raw_reads/"),
+          p(" - 3.Differential_expression_analysis/"),
+          p(" - 4.Functional_analysis/")
         ),
         easyClose = TRUE,
         size = "l",
