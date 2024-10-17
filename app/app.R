@@ -25,7 +25,7 @@ ui <- fluidPage(
            textAreaInput("multiqc_notes", "Notable Facts in the MultiQC Report:",
                          placeholder = "Write something here if any notable facts are found in the multiQC report.",
                          width = "100%", height = "200px"),
-           helpText("The default drop-down menu include all existing folders in your working directory. If your would like to create a new directory to save the results, please enter the full path to the new directory into the blank below."),
+           helpText("The default drop-down menu include all existing folders in your working directory. If your would like to create a new directory to save the results, please enter the full path to the new directory into the blank below. It's recommended to create a new directory for each analysis to avoid overwriting the previous results."),
            selectizeInput("report_out_dir", "Output Directory for DE Analysis:", choices = c(Sys.getenv("PWD"), grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE)), options = list(create = TRUE), width = "100%"),
            selectInput("nextflow_out_dir", "Nextflow Output Directory:",
                        choices = grep("\\/\\.", list.dirs(path = Sys.getenv("PWD"), full.names = TRUE, recursive = FALSE), invert = TRUE, value = TRUE), width = "100%"),
