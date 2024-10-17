@@ -127,7 +127,7 @@ server <- function(input, output, session) {
       })
       return(FALSE)  # Error reading file, return invalid
     })
-    
+
     # Check if 'group' column exists
     if (!"group" %in% colnames(metadata)) {
       output$metadata_error <- renderUI({
@@ -136,6 +136,13 @@ server <- function(input, output, session) {
       return(FALSE)  # Missing group column, return invalid
     }
     
+    if (!"batch" %in% colnames(metadata)) {
+      updateCheckboxInput(session, "batch_correction", value = FALSE)  # Uncheck batch correction
+      disable("batch_correction")  # Disable batch correction checkbox
+    } else {
+      enable("batch_correction")  # Enable batch correction checkbox if "batch" column exists
+    }
+
     # If everything is valid, remove any error message
     output$metadata_error <- renderUI({ NULL })
     
@@ -324,6 +331,7 @@ server <- function(input, output, session) {
           p("Please check the error logs (in *.err file) for more details.")
         ),
         easyClose = TRUE,
+        size = "l",
         footer = modalButton("OK")
       ))
       
