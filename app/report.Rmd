@@ -143,7 +143,15 @@ plotly::ggplotly(p[[2]], tooltip = "label")
 # Differential expression analysis
 
 ```{r step 3.1 - Fitting models, results='asis' }
-source("dge.R", local = T)
+if (length(params$comp_pair) > 0) {
+  source("dge.R", local = T)
+} else {
+  cat("No comparison pairs provided. Differential expression analysis skipped.")
+  summary_df <- NULL
+  vp_list <- list()
+  tb_list <- list()
+  hm_files <- character(0)
+}
 ```
 
 ## Number of DEGs
@@ -221,26 +229,27 @@ Please note that not all gene symbols can be mapped to gene IDs in the functiona
 In the dot plots below, size of the dots represents the proportion of DEGs associated with a particular pathway (number of associated DEGs / total number of DEGs), and color represents the FDR adjusted p-value.
 
 ```{r step 4 - functional enrichments, fig.height=12, fig.width=12, results='asis' }
-source("enrichment.R", local = T)
+if (length(params$comp_pair) > 0) {
+  source("enrichment.R", local = T)
 
-if(params$gsea_msigdb){
-  # Create the dropdown menu
-  cat('<select class="comparison-selector" onchange="showImage(this, \'gsea-comparison\')">')
-  cat('<option value="" selected disabled>Select a comparison</option>')  # Blank default option
-  for (comp in my_contrasts) {
-    cat(paste0('<option value="gsea-', comp, '">', comp, '</option>'))
-  }
-  cat('</select>')
-  
-  # Create divs for each image, initially hidden
-  for (comp in my_contrasts) {
-    cat(paste0('<div id="gsea-', comp, '" class="gsea-comparison" style="display:none;">'))
-    cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
-    cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_bubble_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
-    cat('</div>')
+  if(params$gsea_msigdb){
+    # Create the dropdown menu
+    cat('<select class="comparison-selector" onchange="showImage(this, \'gsea-comparison\')">')
+    cat('<option value="" selected disabled>Select a comparison</option>')  # Blank default option
+    for (comp in my_contrasts) {
+      cat(paste0('<option value="gsea-', comp, '">', comp, '</option>'))
+    }
+    cat('</select>')
+    
+    # Create divs for each image, initially hidden
+    for (comp in my_contrasts) {
+      cat(paste0('<div id="gsea-', comp, '" class="gsea-comparison" style="display:none;">'))
+      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
+      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/', comp, '_GSEA_bubble_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '.png)'))
+      cat('</div>')
+    }
   }
 }
-
 ```
 
 ```{r save R objects }

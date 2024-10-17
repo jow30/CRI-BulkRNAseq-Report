@@ -242,7 +242,8 @@ server <- function(input, output, session) {
         }
       }
     }
-    
+    comp_pair <- comp_pair[!sapply(comp_pair, function(x) any(x == ""))]
+
     shape_by_val <- if (input$shape_by == "") NULL else input$shape_by
     top_var_val <- if(input$top_var == "") NULL else as.numeric(input$top_var)
     intro_val <- gsub("\n", "<br>", input$intro)
