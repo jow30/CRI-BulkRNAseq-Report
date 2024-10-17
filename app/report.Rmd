@@ -244,8 +244,8 @@ if (length(params$comp_pair) > 0) {
     # Create divs for each image, initially hidden
     for (comp in gsea_plots) {
       cat(paste0('<div id="gsea-', comp, '" class="gsea-comparison" style="display:none;">'))
-      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/GSEA_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '_', comp, '.png)'))
-      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/GSEA_bubble_plot_', paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), '_', comp, '.png)'))
+      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/GSEA_plot_', comp, '.png)'))
+      cat(paste0('![](', params$report_out_dir, '/4.Functional_analysis/GSEA_bubble_plot_', comp, '.png)'))
       cat('</div>')
     }
   }
