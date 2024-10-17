@@ -81,10 +81,6 @@ source("functions.R")
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
-```{r create out dir, include=FALSE}
-if(!dir.exists(params$report_out_dir)) dir.create(params$report_out_dir, recursive = TRUE)
-```
-
 # Introduction/Experimental design
 
 ```{r introduction, results='asis'}

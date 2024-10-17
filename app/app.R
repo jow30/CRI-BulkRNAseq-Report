@@ -77,10 +77,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   # Initialize submit button as disabled
   disable("submit_btn")
-  shinyjs::hide("spinner")
   
-  output$render_log <- renderText({ "" })  # Empty log at the start
-
   # Observe the selected MSigDB category and update the subcategory options
   observeEvent(input$ora_msigdbr_category, {
     req(input$ora_msigdbr_category)  # Ensure a category is selected
@@ -222,13 +219,6 @@ server <- function(input, output, session) {
     })
   })
 
-  # Function to update the log output inside the modal
-  update_log <- function(line) {
-    current_log <- output$render_log()  # Get the current log
-    new_log <- paste(current_log, line, sep = "\n")  # Append the new line to the log
-    output$render_log <- renderText({ new_log })  # Update the log text output
-  }
-
   observeEvent(input$submit_btn, {
     disable("submit_btn")  # Disable the submit button to prevent multiple clicks
     
@@ -253,7 +243,9 @@ server <- function(input, output, session) {
     multiqc_notes_val <- gsub("\n", "<br>", input$multiqc_notes)
     ora_msigdbr_subcategory_val <- if (input$ora_msigdbr_subcategory == "") NULL else input$ora_msigdbr_subcategory
     gsea_msigdbr_subcategory_val <- if (input$gsea_msigdbr_subcategory == "") NULL else input$gsea_msigdbr_subcategory
-    
+
+    if(!dir.exists(input$report_out_dir)) dir.create(input$report_out_dir, recursive = TRUE)
+
     # Collect all parameters into a list
     params <- list(
       intro = input$intro,
@@ -289,13 +281,10 @@ server <- function(input, output, session) {
       gsea_msigdbr_subcategory = gsea_msigdbr_subcategory_val
     )
     
-    # Show the modal with the spinner and log area
     showModal(modalDialog(
       title = "Generating Report",
       div(
-        div(class = "spinner-border text-primary", role = "status"),  # Spinner
-        p("Generating report, please wait..."),
-        verbatimTextOutput("render_log")  # Show the render log in the modal
+        p("Generating report, please wait...")
       ),
       footer = NULL,  # No footer while processing
       easyClose = FALSE  # Prevent closing the modal until the process finishes
@@ -303,22 +292,22 @@ server <- function(input, output, session) {
     
     # Use tryCatch to handle any potential errors
     tryCatch({
-      # Capture the output of the rendering process
-      render_output <- capture.output({
-        rmarkdown::render(input = "report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = FALSE)
-      }, type = "message")
-      
-      # Update the log as the rendering progresses
-      for (line in render_output) {
-        update_log(line)  # Update the log in real-time
-      }
+      rmarkdown::render(input = "report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = FALSE)
       
       # After rendering is complete, close the modal and show success
       removeModal()
       showModal(modalDialog(
         title = "Analysis Complete",
-        tagList(paste("Please find the following results at", input$report_out_dir, ".<br><br>report.html<br>report.RData<br>2.Pre-processing_of_raw_reads<br>3.Differential_expression_analysis<br>4.Functional_analysis")),
+        tagList(
+          p(paste0("Please find the following results at ", input$report_out_dir, ":")), 
+          p(" - report.html"),
+          p(" - report.RData"),
+          p(" - 2.Pre-processing_of_raw_reads"),
+          p(" - 3.Differential_expression_analysis"),
+          p(" - 4.Functional_analysis")
+        ),
         easyClose = TRUE,
+        size = "l",
         footer = modalButton("OK")
       ))
       
