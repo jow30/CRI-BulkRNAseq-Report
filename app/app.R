@@ -15,6 +15,8 @@ ui <- fluidPage(
   # Display all inputs directly in the main panel
   fluidRow(
     column(12,
+           textInput("title", "Report Title:", placeholder = "Enter the title of the report", width = "100%"),
+           textInput("author", "Report Author:", placeholder = "Enter the author of the report", width = "100%"),
            textAreaInput("intro", "Project Introduction and Experimental Design:",
                          placeholder = "Write the project introduction and the experimental design here.",
                          width = "100%", height = "200px"),
@@ -256,6 +258,8 @@ server <- function(input, output, session) {
 
     # Collect all parameters into a list
     params <- list(
+      title = input$title,
+      author = input$author,
       intro = input$intro,
       nf_notes = input$nf_notes,
       multiqc_path = input$multiqc_path,
