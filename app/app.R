@@ -81,43 +81,43 @@ server <- function(input, output, session) {
   # Initialize submit button as disabled
   disable("submit_btn")
   
+  params <- reactive({
+    if (file.exists(file.path(Sys.getenv("PWD"), "params.RData"))) {
+      readRDS(file.path(Sys.getenv("PWD"), "params.RData"))
+    } else {
+      NULL
+    }
+  })
+
   # load parameters from a RData file
   observe({
-    if (file.exists(file.path(Sys.getenv("PWD"), "params.RData"))) {
-      params <- readRDS(file.path(Sys.getenv("PWD"), "params.RData"))
-      updateTextInput(session, "title", value = params$title)
-      updateTextInput(session, "author", value = params$author)
-      updateTextAreaInput(session, "intro", value = params$intro)
-      updateTextAreaInput(session, "nf_notes", value = params$nf_notes)
-      updateSelectizeInput(session, "multiqc_path", selected = params$multiqc_path)
-      updateTextAreaInput(session, "multiqc_notes", value = params$multiqc_notes)
-      updateSelectizeInput(session, "report_out_dir", selected = params$report_out_dir)
-      updateSelectInput(session, "nextflow_out_dir", selected = params$nextflow_out_dir)
-      updateSelectizeInput(session, "gtf_file", selected = params$gtf_file)
-      updateCheckboxInput(session, "protein_coding", value = params$protein_coding)
-      updateTextInput(session, "log2_cpm_cutoff", value = params$log2_cpm_cutoff)
-      updateSelectizeInput(session, "metadata_file", selected = params$metadata_file)
-      updateSelectizeInput(session, "sample_remove", selected = params$sample_remove)
-      updateSelectizeInput(session, "color_by", selected = params$color_by)
-      updateSelectizeInput(session, "shape_by", selected = params$shape_by)
-      updateTextInput(session, "top_var", value = params$top_var)
-      updateSelectInput(session, "de_method", selected = params$de_method)
-      updateCheckboxInput(session, "batch_correction", value = params$batch_correction)
-      updateNumericInput(session, "fdr_thres", value = params$fdr_thres)
-      updateNumericInput(session, "fc_thres", value = params$fc_thres)
-      updateNumericInput(session, "ora_fdr_thres", value = params$ora_fdr_thres)
-      updateSelectInput(session, "species", selected = params$species)
-      updateCheckboxInput(session, "ora_all", value = params$ora_all)
-      updateCheckboxInput(session, "ora_go", value = params$ora_go)
-      updateCheckboxInput(session, "ora_kegg", value = params$ora_kegg)
-      updateCheckboxInput(session, "ora_reactome", value = params$ora_reactome)
-      updateCheckboxInput(session, "ora_msigdb", value = params$ora_msigdb)
-      updateSelectInput(session, "ora_msigdbr_category", selected = params$ora_msigdbr_category)
-      updateSelectInput(session, "ora_msigdbr_subcategory", selected = params$ora_msigdbr_subcategory)
-      updateCheckboxInput(session, "gsea_msigdb", value = params$gsea_msigdb)
-      updateNumericInput(session, "gsea_fdr_thres", value = params$gsea_fdr_thres)
-      updateSelectInput(session, "gsea_msigdbr_category", selected = params$gsea_msigdbr_category)
-      updateSelectInput(session, "gsea_msigdbr_subcategory", selected = params$gsea_msigdbr_subcategory)
+    if (!is.null(params)) {
+      updateTextInput(session, "title", value = params()$title)
+      updateTextInput(session, "author", value = params()$author)
+      updateTextAreaInput(session, "intro", value = params()$intro)
+      updateTextAreaInput(session, "nf_notes", value = params()$nf_notes)
+      updateSelectizeInput(session, "multiqc_path", selected = params()$multiqc_path)
+      updateTextAreaInput(session, "multiqc_notes", value = params()$multiqc_notes)
+      updateSelectizeInput(session, "report_out_dir", selected = params()$report_out_dir)
+      updateSelectInput(session, "nextflow_out_dir", selected = params()$nextflow_out_dir)
+      updateSelectizeInput(session, "gtf_file", selected = params()$gtf_file)
+      updateCheckboxInput(session, "protein_coding", value = params()$protein_coding)
+      updateTextInput(session, "log2_cpm_cutoff", value = params()$log2_cpm_cutoff)
+      updateSelectizeInput(session, "metadata_file", selected = params()$metadata_file)
+      updateTextInput(session, "top_var", value = params()$top_var)
+      updateSelectInput(session, "de_method", selected = params()$de_method)
+      updateCheckboxInput(session, "batch_correction", value = params()$batch_correction)
+      updateNumericInput(session, "fdr_thres", value = params()$fdr_thres)
+      updateNumericInput(session, "fc_thres", value = params()$fc_thres)
+      updateNumericInput(session, "ora_fdr_thres", value = params()$ora_fdr_thres)
+      updateSelectInput(session, "species", selected = params()$species)
+      updateCheckboxInput(session, "ora_all", value = params()$ora_all)
+      updateCheckboxInput(session, "ora_go", value = params()$ora_go)
+      updateCheckboxInput(session, "ora_kegg", value = params()$ora_kegg)
+      updateCheckboxInput(session, "ora_reactome", value = params()$ora_reactome)
+      updateCheckboxInput(session, "ora_msigdb", value = params()$ora_msigdb)
+      updateCheckboxInput(session, "gsea_msigdb", value = params()$gsea_msigdb)
+      updateNumericInput(session, "gsea_fdr_thres", value = params()$gsea_fdr_thres)
     }
   })
 
@@ -193,11 +193,16 @@ server <- function(input, output, session) {
     sample_names <- metadata[[1]]
     group_names(metadata$group)
     
-    # Update the selectizeInput for sample_remove with the sample names
-    updateSelectizeInput(session, "sample_remove", choices = sample_names, server = TRUE)
-    
-    updateSelectizeInput(session, "color_by", choices = colnames(metadata)[-1], server = TRUE)
-    updateSelectizeInput(session, "shape_by", choices = c("", colnames(metadata)[-1]), selected = "", server = TRUE)
+    # Update the selectizeInput for sample_remove with the sample names if params is not loaded
+    if (!is.null(params)) {
+      updateSelectizeInput(session, "sample_remove", choices = sample_names, server = TRUE)
+      updateSelectizeInput(session, "color_by", choices = colnames(metadata)[-1], server = TRUE)
+      updateSelectizeInput(session, "shape_by", choices = c("", colnames(metadata)[-1]), selected = "", server = TRUE)
+    }else{
+      updateSelectizeInput(session, "sample_remove", choices = sample_names, selected = params()$sample_remove, server = TRUE)
+      updateSelectizeInput(session, "color_by", choices = colnames(metadata)[-1], selected = params()$color_by, server = TRUE)
+      updateSelectizeInput(session, "shape_by", choices = c("", colnames(metadata)[-1]), selected = params()$shape_by, server = TRUE)
+    }
     
     return(TRUE)  # Metadata is valid
   })
@@ -230,9 +235,9 @@ server <- function(input, output, session) {
     }
   })
 
-  # You can conditionally enable/disable a submit button based on validation
+  # conditionally enable/disable a submit button based on validation
   observe({
-    if (validate_top_var() && validate_metadata()) {
+    if (validate_top_var() && validate_metadata() && validate_log2_cpm_cutoff()) {
       enable("submit_btn")
     } else {
       disable("submit_btn")
@@ -245,6 +250,9 @@ server <- function(input, output, session) {
   # Initialize an empty reactive list to store active comparison pairs
   active_comparisons <- reactiveVal(list())
   
+  # check if params is loaded and params$comp_pair is not NULL, if so, load the comp_pair to active_comparisons and show the comparison pairs in the UI, user can dynamically add or remove pairs
+
+
   # Dynamically add UI for a new comparison pair
   observeEvent(input$add_comparison_btn, {
     # Increment the counter
@@ -311,7 +319,7 @@ server <- function(input, output, session) {
     if(!dir.exists(input$report_out_dir)) dir.create(input$report_out_dir, recursive = TRUE)
 
     # Collect all parameters into a list
-    params <- list(
+    params.new <- list(
       title = input$title,
       author = input$author,
       intro = input$intro,
@@ -349,7 +357,7 @@ server <- function(input, output, session) {
     )
     
     # save parameters to a RData file
-    saveRDS(params, file = file.path(Sys.getenv("PWD"), "params.RData"))
+    saveRDS(params.new, file = file.path(Sys.getenv("PWD"), "params.RData"))
 
     showModal(modalDialog(
       title = "Generating Report",
@@ -362,7 +370,7 @@ server <- function(input, output, session) {
     
     # Use tryCatch to handle any potential errors
     tryCatch({
-      rmarkdown::render(input = "report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params, envir = new.env(), quiet = FALSE)
+      rmarkdown::render(input = "report.Rmd", output_file = file.path(input$report_out_dir, "report.html"), params = params.new, envir = new.env(), quiet = FALSE)
       
       # After rendering is complete, close the modal and show success
       removeModal()
