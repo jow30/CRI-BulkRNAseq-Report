@@ -21,7 +21,12 @@ if(params$de_method=="DESeq2"){
   }
   gene_num_raw <- nrow(dds)
 
-  log2.cpm.cutoff <- log2(10e6/mean(colSums(counts(dds))))
+  # if params$log2_cpm_cutoff is not a number, calculate the log2 cpm cutoff; otherwise, use the user-provided value
+  if(!is.numeric(params$log2_cpm_cutoff)) {
+    log2.cpm.cutoff <- log2(10e6/mean(colSums(counts(dds))))
+  }else{
+    log2.cpm.cutoff <- params$log2_cpm_cutoff
+  }
   p1 <- plot_cpm_density(dds, "Raw", log2.cpm.cutoff)
   
   # pre-filter low count genes
@@ -65,10 +70,14 @@ if(params$de_method=="DESeq2"){
   y <- edgeR::DGEList(txi$counts, samples = sampleinfo)
   gene_num_raw <- nrow(y)
   
-  # Calculate the log2 cpm cutoff by filterByExpr
-  L <- mean(y$samples$lib.size) * 1e-6
-  M <- median(y$samples$lib.size) * 1e-6
-  log2.cpm.cutoff <- log2(10/M + 2/L)
+  if(!is.numeric(params$log2_cpm_cutoff)) {
+    # Calculate the log2 cpm cutoff by filterByExpr
+    L <- mean(y$samples$lib.size) * 1e-6
+    M <- median(y$samples$lib.size) * 1e-6
+    log2.cpm.cutoff <- log2(10/M + 2/L)
+  }else{
+    log2.cpm.cutoff <- params$log2_cpm_cutoff
+  }
   
   p1 <- plot_cpm_density(y, "Transcript length bias corrected", log2.cpm.cutoff)
   

@@ -34,6 +34,8 @@ ui <- fluidPage(
            selectizeInput("gtf_file", "GTF File Used in the nf-core/rnaseq Run:", choices = list.files(path = "/gpfs/data/referenceFiles", pattern = "\\.gtf$", full.names = TRUE, recursive = TRUE), options = list(create = TRUE), width = "100%"),
            helpText("The protein-coding gene filtering is based on the gene_type attribute at the 9th column of the GTF file. So, if you did not use Gencode references, the GTF format could be incompatible with this program and the protein-coding gene filtering won't work properly."),
            checkboxInput("protein_coding", "Retain Protein-Coding Genes Only", TRUE),
+           textInput("log2_cpm_cutoff", "Log2 CPM Cutoff for Filtering Out Lowly Expressed Genes:", value = "", placeholder = "Leave empty to calculate automatically", width = "100%"),
+           uiOutput("log2_cpm_cutoff_error"),
            helpText("The default drop-down menu include all TXT files in your working directory. If your metadata file is stored somewhere else on Randi, please enter the full path to the file into the blank below."),
            selectizeInput("metadata_file", "Metadata File:", choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt", full.names = TRUE, recursive = FALSE), options = list(create = TRUE), width = "100%"),
            uiOutput("metadata_error"),
@@ -93,6 +95,7 @@ server <- function(input, output, session) {
       updateSelectInput(session, "nextflow_out_dir", selected = params$nextflow_out_dir)
       updateSelectizeInput(session, "gtf_file", selected = params$gtf_file)
       updateCheckboxInput(session, "protein_coding", value = params$protein_coding)
+      updateTextInput(session, "log2_cpm_cutoff", value = params$log2_cpm_cutoff)
       updateSelectizeInput(session, "metadata_file", selected = params$metadata_file)
       updateSelectizeInput(session, "sample_remove", selected = params$sample_remove)
       updateSelectizeInput(session, "color_by", selected = params$color_by)
@@ -205,11 +208,23 @@ server <- function(input, output, session) {
     top_var_val <- as.numeric(input$top_var)
     return(!is.na(top_var_val) && top_var_val %% 1 == 0 && top_var_val > 0)
   })
+  validate_log2_cpm_cutoff <- reactive({
+    if (is.null(input$log2_cpm_cutoff) || input$log2_cpm_cutoff == "") return(TRUE)  # Allow empty input
+    log2_cpm_cutoff_val <- as.numeric(input$log2_cpm_cutoff)
+    return(!is.na(log2_cpm_cutoff_val))
+  })
 
   # Dynamically render an error message if 'top_var' is invalid
   output$top_var_error <- renderUI({
     if (!validate_top_var()) {
       div(style = "color: red;", "Please enter an integer greater than 0 or leave it empty.")
+    } else {
+      NULL  # No error message if input is valid
+    }
+  })
+  output$log2_cpm_cutoff_error <- renderUI({
+    if (!validate_log2_cpm_cutoff()) {
+      div(style = "color: red;", "Please enter a numeric value or leave it empty.")
     } else {
       NULL  # No error message if input is valid
     }
@@ -286,6 +301,7 @@ server <- function(input, output, session) {
 
     shape_by_val <- if (input$shape_by == "") NULL else input$shape_by
     top_var_val <- if(input$top_var == "") NULL else as.numeric(input$top_var)
+    log2_cpm_cutoff_val <- if(input$log2_cpm_cutoff == "") NULL else as.numeric(input$log2_cpm_cutoff)
     intro_val <- gsub("\n", "<br>", input$intro)
     nf_notes_val <- gsub("\n", "<br>", input$nf_notes)
     multiqc_notes_val <- gsub("\n", "<br>", input$multiqc_notes)
@@ -306,6 +322,7 @@ server <- function(input, output, session) {
       nextflow_out_dir = input$nextflow_out_dir,
       gtf_file = input$gtf_file,
       protein_coding = input$protein_coding,
+      log2_cpm_cutoff = log2_cpm_cutoff_val,
       metadata_file = input$metadata_file,
       sample_remove = input$sample_remove,
       color_by = input$color_by,

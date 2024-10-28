@@ -29,6 +29,8 @@ params:
   gtf_file: 
   # whether to retain protein-coding genes only
   protein_coding: TRUE
+  # the log2 CPM cutoff to filter out lowly expressed genes
+  log2_cpm_cutoff:
   # a table containing sample information:
   # - the first column should be the same sample names used in nf-core/rnaseq; 
   # - a column named "group" must be included to define the sample groups for comparison;
