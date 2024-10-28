@@ -310,9 +310,6 @@ server <- function(input, output, session) {
     shape_by_val <- if (input$shape_by == "") NULL else input$shape_by
     top_var_val <- if(input$top_var == "") NULL else as.numeric(input$top_var)
     log2_cpm_cutoff_val <- if(input$log2_cpm_cutoff == "") NULL else as.numeric(input$log2_cpm_cutoff)
-    intro_val <- gsub("\n", "<br>", input$intro)
-    nf_notes_val <- gsub("\n", "<br>", input$nf_notes)
-    multiqc_notes_val <- gsub("\n", "<br>", input$multiqc_notes)
     ora_msigdbr_subcategory_val <- if (input$ora_msigdbr_subcategory == "") NULL else input$ora_msigdbr_subcategory
     gsea_msigdbr_subcategory_val <- if (input$gsea_msigdbr_subcategory == "") NULL else input$gsea_msigdbr_subcategory
 
