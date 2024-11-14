@@ -160,7 +160,7 @@ if(params$ora_msigdb){
       # map entrez ids back to gene names
       enrichMSigDB_res$all@compareClusterResult$geneID <- lapply(enrichMSigDB_res$all@compareClusterResult$geneID, function(x) unlist(strsplit(x, "/")) %>% bitr(fromType = "ENTREZID", toType = "SYMBOL", OrgDb = gsorDb) %>% dplyr::select(SYMBOL) %>% unlist() %>% paste(collapse = "/")) %>% unlist()
       # save the enriched MSigDB pathways
-      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$all@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, params$ora_msigdbr_subcategory), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), ".csv"))) %>% invisible()
+      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$all@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, gsub(":", "-", params$ora_msigdbr_subcategory)), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), ".csv"))) %>% invisible()
     }
   }else{
     if (!all(sapply(downGenes, length) == 0)) {
@@ -169,7 +169,7 @@ if(params$ora_msigdb){
     }
     if (!is.null(enrichMSigDB_res$down)) {
       gs_dotplot(enrichMSigDB_res$down, params$ora_fdr_thres, paste0("Top 10 enriched MSigDB ", paste(c(params$ora_msigdbr_category, params$ora_msigdbr_subcategory), collapse = " "), " pathways per contrast (down-regulated)"))
-      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$down@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, params$ora_msigdbr_subcategory), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), "_down.csv"))) %>% invisible()
+      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$down@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, gsub(":", "-", params$ora_msigdbr_subcategory)), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), "_down.csv"))) %>% invisible()
     }
     if (!all(sapply(upGenes, length) == 0)) {
       upEntrez <- lapply(upGenes, function(x) bitr(x, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = gsorDb)$ENTREZID)
@@ -177,7 +177,7 @@ if(params$ora_msigdb){
     }
     if (!is.null(enrichMSigDB_res$up)) {
       gs_dotplot(enrichMSigDB_res$up, params$ora_fdr_thres, paste0("Top 10 enriched MSigDB ", paste(c(params$ora_msigdbr_category, params$ora_msigdbr_subcategory), collapse = " "), " pathways per contrast (up-regulated)"))
-      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$up@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, params$ora_msigdbr_subcategory), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), "_up.csv"))) %>% invisible()
+      lapply(my_contrasts, function(x) write_csv(subset(enrichMSigDB_res$up@compareClusterResult, Cluster==x & p.adjust<params$ora_fdr_thres), file = paste0(file.path(params$report_out_dir, "4.Functional_analysis"), "/ORA_MSigDB_", paste(c(params$ora_msigdbr_category, gsub(":", "-", params$ora_msigdbr_subcategory)), collapse = "_"),  "_", x, "_padj", sub("0\\.", "", as.character(params$ora_fdr_thres)), "_up.csv"))) %>% invisible()
     }  
   }
 }
@@ -192,7 +192,7 @@ if(params$gsea_msigdb){
 
   gsea_plots <- list.files(file.path(params$report_out_dir, "4.Functional_analysis"), pattern = "GSEA_plot", full.names = TRUE)
   gsea_plots <- gsub(".*/GSEA_plot_", "", gsub(".png", "", gsea_plots))
-  gsea_plots <- gsub(paste(c(params$gsea_msigdbr_category, params$gsea_msigdbr_subcategory), collapse = '_'), "", gsea_plots)
+  gsea_plots <- gsub(paste(c(params$gsea_msigdbr_category, gsub(":", "-", params$gsea_msigdbr_subcategory)), collapse = '_'), "", gsea_plots)
   gsea_plots <- gsub("^_", "", gsea_plots)
 }
 
