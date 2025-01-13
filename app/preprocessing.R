@@ -1,6 +1,6 @@
 # Load in gene count data
-files <- file.path(params$nextflow_out_dir,"star_salmon",sampleinfo$sample,"quant.genes.sf") %>% setNames(sampleinfo$sample)
-if (!all(file.exists(files))) stop("Samples are not found. Please check whether the samples in the metadata file match the samples provided to the nf-core/rnaseq pipeline")
+salmon_files <- file.path(params$nextflow_out_dir,"star_salmon",sampleinfo$sample,"quant.genes.sf") %>% setNames(sampleinfo$sample)
+if (!all(file.exists(salmon_files))) stop("Samples are not found. Please check whether the samples in the metadata file match the samples provided to the nf-core/rnaseq pipeline")
 
 # Load in gene names
 tx2gene<-read.table(file.path(params$nextflow_out_dir,"star_salmon/tx2gene.tsv"), sep="\t")
@@ -12,7 +12,7 @@ geneinfo <- rtracklayer::as.data.frame(gtf)
 geneinfo <- geneinfo[geneinfo$type == "gene", c("gene_id", "gene_name", "gene_type")] %>% unique()
 
 if(params$de_method=="DESeq2"){
-  txi <- tximport::tximport(files, type = "salmon", tx2gene = tx2gene)
+  txi <- tximport::tximport(salmon_files, type = "salmon", tx2gene = tx2gene)
   
   if(params$batch_correction) {
     dds <- DESeq2::DESeqDataSetFromTximport(txi, colData = sampleinfo, design = ~ batch + group)
@@ -27,7 +27,7 @@ if(params$de_method=="DESeq2"){
   }else{
     log2.cpm.cutoff <- params$log2_cpm_cutoff
   }
-  p1 <- plot_cpm_density(dds, "Raw", log2.cpm.cutoff)
+  cpm_plot1 <- plot_cpm_density(dds, "Raw", log2.cpm.cutoff)
   
   # pre-filter low count genes
   smallestGroupSize <- min(table(sampleinfo$group))
@@ -45,28 +45,28 @@ if(params$de_method=="DESeq2"){
     cat("We retain only protein-coding genes, reducing the number of genes from ", gene_num_filtered, " to ", nrow(dds), ". ", sep = "")
     cat("Counts of protein-coding genes were saved at `2.Pre-processing_of_raw_reads/protein_coding_gene_counts.csv`. <br><br>", sep = "")
   }
-  p2 <- plot_cpm_density(dds, "Filtered", log2.cpm.cutoff)
+  cpm_plot2 <- plot_cpm_density(dds, "Filtered", log2.cpm.cutoff)
   
   dds <- DESeq2::estimateSizeFactors(dds)
   dds_norm <- DESeq2::counts(dds, normalized = TRUE)
   write_csv(as_tibble(dds_norm, rownames='geneName'), file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/protein_coding_gene_counts_norm.csv"))
   cat("DESeq2 automatically normalizes count data when it runs differential expression. However, we need to normalize counts aside for certain plots like PCA and heatmaps. We applied a variance stabilizing transformation (VST) to the count data and also normalized with respect to library size when making the plots. ", sep = "")
   cat("The library-size normalized protein-coding gene counts were saved at `2.Pre-processing_of_raw_reads/protein_coding_gene_counts_norm.csv`. <br>", sep = "")
-  p3 <- plot_cpm_density(dds_norm, "Filtered, normalized", log2.cpm.cutoff)
+  cpm_plot3 <- plot_cpm_density(dds_norm, "Filtered, normalized", log2.cpm.cutoff)
   
   log2.cpm.norm <- edgeR::cpm(dds_norm, log=TRUE)
   
   cat("<h3>CPM density plot/violin plot</h3>")
-  print(p1)
-  print(p2)
-  print(p3)
+  print(cpm_plot1)
+  print(cpm_plot2)
+  print(cpm_plot3)
 
   vsd <- DESeq2::vst(dds)
   pca_attr <- colData(vsd)
   pca_df <- assay(vsd)
   
 }else if(params$de_method=="limma-voom"){
-  txi <- tximport::tximport(files, type = "salmon", tx2gene = tx2gene, countsFromAbundance = "lengthScaledTPM")
+  txi <- tximport::tximport(salmon_files, type = "salmon", tx2gene = tx2gene, countsFromAbundance = "lengthScaledTPM")
   y <- edgeR::DGEList(txi$counts, samples = sampleinfo)
   gene_num_raw <- nrow(y)
   
@@ -79,7 +79,7 @@ if(params$de_method=="DESeq2"){
     log2.cpm.cutoff <- params$log2_cpm_cutoff
   }
   
-  p1 <- plot_cpm_density(y, "Transcript length bias corrected", log2.cpm.cutoff)
+  cpm_plot1 <- plot_cpm_density(y, "Transcript length bias corrected", log2.cpm.cutoff)
   
   # pre-filter low count genes
   keep <- edgeR::filterByExpr(y, group = y$samples$group)
@@ -96,7 +96,7 @@ if(params$de_method=="DESeq2"){
     cat("We retained only protein-coding genes, reducing the number of genes from ", gene_num_filtered, " to ", nrow(y), ".\n", sep = "")
     cat("Counts of protein-coding genes were saved at `2.Pre-processing_of_raw_reads/protein_coding_gene_counts.csv`. <br><br>", sep = "")
   }
-  p2 <- plot_cpm_density(y, "Transcript length bias corrected, filtered", log2.cpm.cutoff)
+  cpm_plot2 <- plot_cpm_density(y, "Transcript length bias corrected, filtered", log2.cpm.cutoff)
 
   # Create design matrix
   # refer to https://bioconductor.org/packages/release/workflows/vignettes/RNAseq123/inst/doc/designmatrices.html
@@ -109,7 +109,7 @@ if(params$de_method=="DESeq2"){
   # normalize and run voom transformation
   y <- edgeR::calcNormFactors(y, method = "TMM")
   v <- limma::voom(y, design)
-  p3 <- plot_cpm_density(y, "Transcript length bias corrected, filtered, and normalized", log2.cpm.cutoff)
+  cpm_plot3 <- plot_cpm_density(y, "Transcript length bias corrected, filtered, and normalized", log2.cpm.cutoff)
   
   # Save normalized counts
   write_csv(as_tibble(y$counts, rownames='geneName'), file = file.path(params$report_out_dir, "2.Pre-processing_of_raw_reads/protein_coding_gene_counts_norm.csv"))
@@ -126,9 +126,9 @@ if(params$de_method=="DESeq2"){
   cat("Normalized log2 CPM was saved in `2.Pre-processing_of_raw_reads/protein_coding_gene_log2_cpm_norm.csv`. <br>", sep = "")
   
   cat("<h3>CPM density plot/violin plot</h3>")
-  print(p1)
-  print(p2)
-  print(p3)
+  print(cpm_plot1)
+  print(cpm_plot2)
+  print(cpm_plot3)
   
   pca_attr <- y$samples
   pca_df <- log2.cpm.norm

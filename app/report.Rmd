@@ -137,9 +137,9 @@ The PCA plot represents the correlations among samples. It projects the high-dim
 The scree plot represents the percentages of variation that each PC accounts for.
 
 ```{r step 2.4 - PCA plot, results='asis' }
-p <- plot_pca(pca_attr, pca_df, params$color_by, params$shape_by, params$top_var)
-plotly::ggplotly(p[[1]], tooltip = "label") 
-plotly::ggplotly(p[[2]], tooltip = "label") 
+pca_plots <- plot_pca(pca_attr, pca_df, params$color_by, params$shape_by, params$top_var)
+plotly::ggplotly(pca_plots[[1]], tooltip = "label") 
+plotly::ggplotly(pca_plots[[2]], tooltip = "label") 
 ```
 
 ------------------------------------------------------------------------
