@@ -160,7 +160,7 @@ if (length(params$comp_pair) > 0) {
 
 ## Number of DEGs
 
-Significant differentially expressed genes (DEGs) were defined with an absolute fold change (LFC) larger than `r params$fc_thres` and a false-discovery rate (FDR) lower than `r params$fdr_thres`.
+Significant differentially expressed genes (DEGs) were defined with an absolute fold change (FC) larger than `r params$fc_thres` and a false-discovery rate (FDR) lower than `r params$fdr_thres`.
 
 ```{r step 3.2 - Table summary of DE genes }
 DT::datatable(summary_df, options = list(pageLength = 10))
