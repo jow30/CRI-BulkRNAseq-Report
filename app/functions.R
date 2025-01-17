@@ -23,18 +23,24 @@ library(ReactomePA)
 library(pathview)
 
 get_sampleinfo <- function(file){
-  sampleinfo <- read.delim(file)
+  file_ext <- tools::file_ext(file)
+  if (file_ext == "csv") {
+    sampleinfo <- read.csv(file)
+    colnames(sampleinfo)[1] <- "sample"
+  } else if (file_ext == "txt") {
+    sampleinfo <- read.delim(file)
+  }
   sampleinfo <- sampleinfo[order(sampleinfo$group),]
-  rownames(sampleinfo) <- sampleinfo$sample
+  rownames(sampleinfo) <- sampleinfo[[1]]
   return(sampleinfo)
 }
 
 remove_samples <- function(sample_to_remove, sampleinfo){
   if (length(sample_to_remove) > 0) {
-    if (length(setdiff(sample_to_remove, sampleinfo$sample)) > 0) {
+    if (length(setdiff(sample_to_remove, sampleinfo[[1]])) > 0) {
       stop("Samples to remove are not found. Please check whether the samples to remove exist in the metadata file.")
     } else {
-      sampleinfo <- sampleinfo[!sampleinfo$sample %in% sample_to_remove,]
+      sampleinfo <- sampleinfo[!sampleinfo[[1]] %in% sample_to_remove,]
       cat("<span style='color:red;'>The following samples were removed from the analysis:", paste(sample_to_remove, collapse = ", "), "</span><br>")
       return(sampleinfo)
     }
@@ -79,7 +85,7 @@ plot_cpm_density <- function(myDGEList, subtitle, log2.cpm.cutoff){
 }
 
 plot_pca <- function(pca_attr, pca_df, color_by, shape_by, top_var){
-  sample <- factor(pca_attr$sample)
+  sample <- factor(pca_attr[[1]])
   if(color_by %in% colnames(pca_attr)) {
     color_attr <- factor(pca_attr[[color_by]])
   } else{ stop("Invalid sample attribute provided for colors in PCA plot. ") }
@@ -96,7 +102,7 @@ plot_pca <- function(pca_attr, pca_df, color_by, shape_by, top_var){
   pc.var<-pca.res$sdev^2 # sdev^2 captures these eigenvalues from the PCA result
   pc.per<-round(pc.var/sum(pc.var)*100, 1)
   pca.res.df <- as_tibble(pca.res$x)
-  
+
   p1 <- ggplot(pca.res.df) +
     aes(x = PC1, y = PC2, label = sample, color = color_attr) +
     geom_point(size = 2) +
@@ -166,7 +172,7 @@ table_degs <- function(table_number, comp, sampleinfo, sample_df, resSig, fdr.th
   comp_grp <- str_split(comp, "-")[[1]]
   
   # get samples in each group
-  sample_grp <- lapply(1:2, function(x) sampleinfo$sample[sampleinfo$group %in% comp_grp[x]])
+  sample_grp <- lapply(1:2, function(x) sampleinfo[[1]][sampleinfo$group %in% comp_grp[x]])
   
   # get normalized log2 cpm of each sample for all DEGs
   diffGenes <- sample_df[rownames(resSig), unlist(sample_grp)]
@@ -201,7 +207,7 @@ table_degs <- function(table_number, comp, sampleinfo, sample_df, resSig, fdr.th
 
 plot_heatmap <- function(comp, sampleinfo, data, resSig, outDir){
   comp_grp <- str_split(comp, "-")[[1]]
-  sample_grp <- lapply(1:2, function(x) sampleinfo$sample[sampleinfo$group %in% comp_grp[x]])
+  sample_grp <- lapply(1:2, function(x) sampleinfo[[1]][sampleinfo$group %in% comp_grp[x]])
   
   diffGenes <- data[rownames(resSig), unlist(sample_grp)]
   if (dim(diffGenes)[1]>0) {

@@ -36,8 +36,8 @@ ui <- fluidPage(
            checkboxInput("protein_coding", "Retain Protein-Coding Genes Only", TRUE),
            textInput("log2_cpm_cutoff", "Log2 CPM Cutoff for Filtering Out Lowly Expressed Genes:", value = "", placeholder = "Leave empty to calculate automatically", width = "100%"),
            uiOutput("log2_cpm_cutoff_error"),
-           helpText("The default drop-down menu include all TXT files in your working directory. If your metadata file is stored somewhere else on Randi, please enter the full path to the file into the blank below."),
-           selectizeInput("metadata_file", "Metadata File:", choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt", full.names = TRUE, recursive = FALSE), options = list(create = TRUE), width = "100%"),
+           helpText("The default drop-down menu include all CSV and TXT files in your working directory. If your metadata file is stored somewhere else on Randi, please enter the full path to the file into the blank below."),
+           selectizeInput("metadata_file", "Metadata File:", choices = list.files(path = Sys.getenv("PWD"), pattern = ".txt|.csv", full.names = TRUE, recursive = FALSE), options = list(create = TRUE), width = "100%"),
            uiOutput("metadata_error"),
            selectizeInput("sample_remove", "Samples to Remove:", choices = NULL, multiple = TRUE, options = list(create = FALSE), width = "100%"),
            selectizeInput("color_by", "Sample Attribute for PCA Color:", choices = NULL, width = "100%"),
@@ -163,10 +163,17 @@ server <- function(input, output, session) {
     
     # Try reading the metadata file, handle errors
     metadata <- tryCatch({
-      read.delim(input$metadata_file)
+      # Check the file extension
+      file_ext <- tools::file_ext(input$metadata_file)
+      if (file_ext == "csv") {
+        read.csv(input$metadata_file)
+      } else if (file_ext == "txt") {
+        read.delim(input$metadata_file)
+      } 
     }, error = function(e) {
+      # Display error message in the UI
       output$metadata_error <- renderUI({
-        div(style = "color: red;", "Error reading the file. Please check if the file format is correct. Only TXT format is acceptable.")
+        div(style = "color: red;", "Error reading the file. Please check if the file format is correct. Only CSV or TXT formats are acceptable.")
       })
       return(FALSE)  # Error reading file, return invalid
     })

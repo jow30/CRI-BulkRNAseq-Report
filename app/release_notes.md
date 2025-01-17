@@ -1,4 +1,10 @@
 ---
+
+2025-01-15 Updates
+
+- Allow csv metadata format
+
+---
 2024-10-10 Updates
 
 - Enable an interface (shiny app) that allows users to set parameters by filling out the form. 

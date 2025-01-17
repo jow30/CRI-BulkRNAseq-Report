@@ -1,5 +1,5 @@
 # Load in gene count data
-salmon_files <- file.path(params$nextflow_out_dir,"star_salmon",sampleinfo$sample,"quant.genes.sf") %>% setNames(sampleinfo$sample)
+salmon_files <- file.path(params$nextflow_out_dir,"star_salmon",sampleinfo[[1]],"quant.genes.sf") %>% setNames(sampleinfo[[1]])
 if (!all(file.exists(salmon_files))) stop("Samples are not found. Please check whether the samples in the metadata file match the samples provided to the nf-core/rnaseq pipeline")
 
 # Load in gene names
