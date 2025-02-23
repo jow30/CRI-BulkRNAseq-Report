@@ -175,7 +175,7 @@ table_degs <- function(table_number, comp, sampleinfo, sample_df, resSig, fdr.th
   sample_grp <- lapply(1:2, function(x) sampleinfo[[1]][sampleinfo$group %in% comp_grp[x]])
   
   # get normalized log2 cpm of each sample for all DEGs
-  diffGenes <- sample_df[rownames(resSig), unlist(sample_grp)]
+  diffGenes <- sample_df[rownames(resSig), unlist(sample_grp), drop = F]
   diffGenes.df <- as_tibble(diffGenes, rownames = "gene_name")
   
   # add average log2 cpm of each group to the table
@@ -209,8 +209,8 @@ plot_heatmap <- function(comp, sampleinfo, data, resSig, outDir){
   comp_grp <- str_split(comp, "-")[[1]]
   sample_grp <- lapply(1:2, function(x) sampleinfo[[1]][sampleinfo$group %in% comp_grp[x]])
   
-  diffGenes <- data[rownames(resSig), unlist(sample_grp)]
-  if (dim(diffGenes)[1]>0) {
+  diffGenes <- data[rownames(resSig), unlist(sample_grp), drop = F]
+  if (dim(diffGenes)[1]>1) {
     myheatcolors <- rev(RColorBrewer::brewer.pal(name="RdBu", n=8))
     clustRows <- hclust(as.dist(1-cor(t(diffGenes), method="pearson")), method="complete") #cluster rows by pearson correlation
     clustColumns <- hclust(as.dist(1-cor(diffGenes, method="spearman")), method="complete")
