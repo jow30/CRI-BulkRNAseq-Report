@@ -27,7 +27,7 @@ if(params$ora_go){
       # run GO enrichment analysis
       enrichGO_res$all <- lapply(go_cat, function(x) clusterProfiler::compareCluster(geneCluster = deGenes, fun = 'enrichGO', keyType = 'SYMBOL', OrgDb = gsorDb, ont = x, readable = TRUE)) %>% setNames(go_cat)
       # remove null elements 
-      enrichGO_res$all <- enrichGO_res$all[!sapply(enrichGO_res$all, is.null)]
+      enrichGO_res$all <- if (all(sapply(enrichGO_res$all, is.null))) NULL else enrichGO_res$all[!sapply(enrichGO_res$all, is.null)]
     }
     if (!is.null(enrichGO_res$all)) {
       # plot the enriched GO terms
@@ -39,7 +39,7 @@ if(params$ora_go){
     if (!all(sapply(downGenes, length) == 0)) {
       enrichGO_res$down <- lapply(go_cat, function(x) clusterProfiler::compareCluster(geneCluster = downGenes, fun = 'enrichGO', keyType = 'SYMBOL', OrgDb = gsorDb, ont = x, readable = TRUE)) %>% setNames(go_cat)
       # remove null elements 
-      enrichGO_res$down <- enrichGO_res$down[!sapply(enrichGO_res$down, is.null)]
+      enrichGO_res$down <- if (all(sapply(enrichGO_res$down, is.null))) NULL else enrichGO_res$down[!sapply(enrichGO_res$down, is.null)]
     }
     if (!is.null(enrichGO_res$down)) {
       lapply(go_cat, function(x) gs_dotplot(enrichGO_res$down[[x]], params$ora_fdr_thres, paste0("Top 10 enriched GO ", x, " terms per contrast (down-regulated)"))) %>% invisible()
@@ -48,7 +48,7 @@ if(params$ora_go){
     if (!all(sapply(upGenes, length) == 0)) {
       enrichGO_res$up <- lapply(go_cat, function(x) clusterProfiler::compareCluster(geneCluster = upGenes, fun = 'enrichGO', keyType = 'SYMBOL', OrgDb = gsorDb, ont = x, readable = TRUE)) %>% setNames(go_cat)
       # remove null elements 
-      enrichGO_res$up <- enrichGO_res$up[!sapply(enrichGO_res$up, is.null)]
+      enrichGO_res$up <- if (all(sapply(enrichGO_res$up, is.null))) NULL else enrichGO_res$up[!sapply(enrichGO_res$up, is.null)]
     }
     if (!is.null(enrichGO_res$up)) {
       lapply(go_cat, function(x) gs_dotplot(enrichGO_res$up[[x]], params$ora_fdr_thres, paste0("Top 10 enriched GO ", x, " terms per contrast (up-regulated)"))) %>% invisible()
